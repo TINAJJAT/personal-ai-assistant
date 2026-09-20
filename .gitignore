@@ -149,13 +149,25 @@ activemq-data/
 
 # Environments
 .env
+.env.*
+!.env.example
 .envrc
 .venv
+chatbot_env/
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Google Authentication
+credentials.json
+*token*.json
+
+# Personal files and logs
+assistant_files/
+logs/
+*.log
 
 # Spyder project settings
 .spyderproject
