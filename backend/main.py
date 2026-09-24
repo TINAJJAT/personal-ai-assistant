@@ -17,6 +17,8 @@ from backend.tools.registry import build_tools
 from backend.api.threads import router as threads_router
 from backend.api.chat import router as chat_router
 from backend.api.recovery import router as recovery_router
+from backend.agent.runs import RunManager
+from backend.api.runs import router as runs_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -47,14 +49,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             )
             app.state.tool_names = [tool.name for tool in tools]
 
+            app.state.agent_lock = asyncio.Lock()
+
+            runs = RunManager()
+            app.state.runs = runs
+
             try:
-                app.state.agent_lock = asyncio.Lock()
                 yield
             finally:
-                # Release references before closing shared resources.
-                app.state.agent = None
-                app.state.threads = None
-                app.state.tool_names = []
+                try:
+                    # Stop active execution before shared resources close.
+                    await runs.close()
+                finally:
+                    # Release references before closing shared resources.
+                    app.state.runs = None
+                    app.state.agent = None
+                    app.state.threads = None
+                    app.state.tool_names = []
 
 
 app = FastAPI(
@@ -67,6 +78,7 @@ app = FastAPI(
 app.include_router(threads_router)
 app.include_router(chat_router)
 app.include_router(recovery_router)
+app.include_router(runs_router)
 
 @app.get("/health", tags=["System"])
 async def health() -> dict[str, str]:
