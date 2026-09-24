@@ -82,10 +82,19 @@ def render_app(api: AssistantAPI) -> None:
 
     if pending:
         st.warning(
-            "This conversation has an active or unfinished run. "
-            "Refresh after it finishes. If it remains unfinished, "
-            "recovery is needed before sending another message."
+            "This conversation has an active or unfinished request. "
+            "If it is still running, wait and refresh. Otherwise, "
+            "you can resume the saved request."
         )
+
+        if st.button(
+            "Resume unfinished request",
+            key=f"resume_{thread_id}",
+        ):
+            with st.spinner("Resuming your request..."):
+                api.resume_thread(thread_id)
+
+            st.rerun()
 
     prompt = st.chat_input(
         "Ask your assistant...",

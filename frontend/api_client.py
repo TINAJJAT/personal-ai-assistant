@@ -130,3 +130,11 @@ class AssistantAPI:
                 "The connection was interrupted. "
                 "Refresh to inspect saved progress."
             ) from None
+
+
+    def resume_thread(self, thread_id: str) -> dict:
+        """Explicitly request recovery without resending a message."""
+        return self._request(
+            "POST",
+            f"/threads/{thread_id}/resume",
+        )
