@@ -11,6 +11,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from backend.api.threads import Repository
+from backend.api.streaming import managed_stream
 
 import json
 from contextlib import aclosing
@@ -243,6 +244,11 @@ async def stream_message(
     agent = request.app.state.agent
     lock = request.app.state.agent_lock
 
+    manager = getattr(request.app.state, "runs", None)
+
+    if manager is None:
+        raise HTTPException(503, "Run manager is unavailable.")
+
     if agent is None:
         raise HTTPException(503, "The assistant is unavailable.")
 
@@ -365,7 +371,11 @@ async def stream_message(
             yield encode_event("done", answer=answer)
 
     return StreamingResponse(
-        generate(),
+        managed_stream(
+            manager=manager,
+            thread_id=str(thread_id),
+            source=generate,
+        ),
         media_type="application/x-ndjson",
         headers={"Cache-Control": "no-cache"},
     )
